@@ -1,0 +1,247 @@
+/* --- GLOBAL THEME & VARIABLES --- */
+:root {
+    --bg: #030712;
+    --card: #111827;
+    --primary: #3b82f6; /* Your Signature Blue */
+    --accent: #10b981;  /* Green for success/match */
+    --text: #f9fafb;
+    --border: rgba(255, 255, 255, 0.1);
+}
+
+body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    margin: 0;
+    overflow-x: hidden;
+}
+
+/* --- NAVIGATION (Restored to Original Image Style) --- */
+.glass-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 8%;
+    background: rgba(3, 7, 18, 0.7);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid var(--border);
+}
+
+.logo { font-size: 1.5rem; font-weight: 800; letter-spacing: -1px; }
+.logo span { color: var(--primary); }
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+}
+
+.nav-links a {
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.9rem;
+    opacity: 0.8;
+    transition: 0.3s;
+}
+
+.nav-links a:hover {
+    opacity: 1;
+    color: var(--primary);
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+/* --- HERO SECTION --- */
+.hero {
+    text-align: center;
+    padding: 80px 10% 60px;
+    animation: fadeIn 1s ease-out;
+}
+
+.hero h1 { font-size: 3.5rem; margin-bottom: 20px; line-height: 1.1; font-weight: 800; }
+.hero p { max-width: 600px; margin: 0 auto; opacity: 0.7; font-size: 1.1rem; line-height: 1.6; }
+
+/* Blue "Propelled by..." Badge (Restored) */
+.badge {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--primary);
+    padding: 8px 16px;
+    border-radius: 100px;
+    display: inline-block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+.gradient-text {
+    background: linear-gradient(90deg, #3b82f6, #10b981);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* --- COMMAND CENTER (NEW SEARCH BAR) --- */
+.command-center {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 8px;
+    border-radius: 100px;
+    display: flex;
+    align-items: center;
+    max-width: 900px;
+    margin: 40px auto;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
+
+.input-group { padding: 0 20px; flex: 1; }
+.upload-label { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 0.85rem; opacity: 0.8; }
+.upload-label i { color: var(--primary); }
+
+.divider { width: 1px; height: 30px; background: var(--border); }
+
+.main-input, .main-select {
+    background: transparent; border: none; color: white;
+    padding: 10px 20px; outline: none; flex: 1; font-size: 0.95rem;
+}
+
+.main-select { cursor: pointer; font-weight: 600; }
+.main-select option { background: var(--card); color: white; }
+
+.btn-analyze {
+    background: var(--primary); color: white; border: none;
+    padding: 12px 28px; border-radius: 50px; cursor: pointer;
+    font-weight: 700; transition: 0.3s;
+}
+
+.btn-analyze:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
+
+/* --- RESULT CARD --- */
+.result-card {
+    background: rgba(59, 130, 246, 0.05);
+    border: 1px solid var(--primary);
+    max-width: 600px;
+    margin: 20px auto;
+    padding: 25px;
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    text-align: left;
+}
+
+.score-circle { text-align: center; }
+.score-circle h2 { font-size: 2.5rem; margin: 0; color: var(--primary); }
+.score-circle span { font-size: 0.7rem; text-transform: uppercase; opacity: 0.6; }
+
+/* --- BENTO GRID & FEATURES --- */
+.bento-container {
+  display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-auto-rows: minmax(150px, auto); /* Allows rows to shrink if content is small */
+    grid-gap: 20px;
+    padding: 0 8% 100px;
+}
+
+.bento-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 30px;
+    border-radius: 24px;
+    transition: all 0.3s ease;
+}
+
+.bento-item h3 { margin: 15px 0 10px; font-size: 1.25rem; }
+.bento-item p { opacity: 0.6; font-size: 0.9rem; line-height: 1.5; }
+.bento-item i { color: var(--primary); }
+
+.bento-item:hover {
+    border-color: var(--primary);
+    transform: translateY(-5px);
+    background: rgba(17, 24, 39, 0.8);
+}
+
+.wide { grid-column: span 2; }
+.tall { grid-row: span 2; }
+
+/* --- LEARNING PATH & MINI INPUTS --- */
+.path-chips { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+
+.course-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    padding: 12px;
+    border-radius: 12px;
+    text-align: left;
+}
+
+.skill-tag { font-weight: 800; font-size: 0.75rem; color: var(--primary); text-transform: uppercase; margin-bottom: 5px; }
+
+.course-links { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; }
+.free-link { color: var(--accent); }
+.paid-link { color: #f59e0b; }
+
+.budget-input-wrapper {
+    margin-top: 15px; background: rgba(255,255,255,0.05);
+    padding: 8px 15px; border-radius: 12px; display: flex; align-items: center; gap: 10px;
+}
+
+.mini-input {
+    background: transparent; border: none; color: var(--primary);
+    width: 80px; font-weight: 800; outline: none; font-size: 1rem;
+}
+
+.viz-placeholder { margin-top: 20px; color: var(--primary); font-weight: 600; font-size: 0.8rem; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+/* Updated Warning Color to Yellow */
+.skill-tag-header { 
+    color: #f59e0b !important; /* Professional Amber/Yellow */
+    font-weight: 800; 
+    font-size: 0.9rem; 
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 8px;
+}
+
+/* Udemy Button Style */
+.udemy-btn {
+    background: rgba(164, 53, 240, 0.1) !important; /* Udemy Purple tint */
+    color: #cf8bf3 !important;
+    border: 1px solid rgba(164, 53, 240, 0.3) !important;
+}
+.udemy-btn:hover {
+    background: #a435f0 !important;
+    color: white !important;
+}
+
+/* Ensure consistent button spacing */
+.course-btn { 
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px; 
+    padding: 8px 14px; 
+    border-radius: 8px; 
+    background: rgba(59, 130, 246, 0.1); 
+    color: var(--primary); 
+    font-size: 0.7rem; 
+    font-weight: 700; 
+    text-decoration: none; 
+    border: 1px solid rgba(59, 130, 246, 0.2); 
+    transition: 0.3s; 
+}

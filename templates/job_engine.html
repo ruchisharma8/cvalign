@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CVAlign.AI | Global Job Engine</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+#job-results::-webkit-scrollbar,#detail-body::-webkit-scrollbar,#recruiter-results::-webkit-scrollbar{width:5px;height:5px}
+#job-results::-webkit-scrollbar-thumb,#detail-body::-webkit-scrollbar-thumb,#recruiter-results::-webkit-scrollbar-thumb{background:var(--primary);border-radius:10px}
+.error-banner{background:rgba(239,68,68,.1);border:1px solid #ef4444;color:#fca5a5;padding:14px;border-radius:12px;font-size:.85rem;text-align:center}
+.error-banner a{color:#fca5a5;font-weight:700}
+#auth-banner{display:none;max-width:620px;margin:16px auto 0}
+
+/* ---------- tools strip ---------- */
+.tools-strip{display:grid;grid-template-columns:1fr 1.2fr 1.7fr;gap:16px;padding:0 8% 18px}
+.tool-card{padding:16px 18px !important;min-height:0;height:auto;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+.tool-card h3{font-size:.85rem;margin:0}
+.tool-head{display:flex;align-items:center;gap:8px}
+.tool-head i{width:16px;height:16px}
+.tool-card p.hint{font-size:.68rem;opacity:.6;margin:0}
+.tool-btns{display:flex;gap:8px;flex-wrap:wrap}
+.tool-btns a{flex:1;min-width:120px;text-align:center;font-size:.68rem;text-decoration:none;padding:9px 10px}
+#recruiter-results{display:flex !important;flex-direction:row !important;gap:10px;overflow-x:auto;overflow-y:hidden;position:relative;padding-bottom:6px}
+.rc-chip{flex:0 0 auto;min-width:170px;padding:10px 12px !important;margin:0 !important;transition:.2s}
+.rc-chip.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.rc-chip .rc-co{font-weight:700;font-size:.8rem;margin:2px 0 4px;max-width:210px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- master-detail split ---------- */
+.split{display:grid;grid-template-columns:2fr 3fr;gap:16px;padding:0 8% 80px;height:800px}
+.pane{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.job-card{cursor:pointer;transition:.25s;margin-bottom:12px}
+.job-card:hover{border-color:var(--primary)}
+.job-card.active{border-color:var(--primary);background:rgba(59,130,246,.08);box-shadow:0 0 0 1px var(--primary)}
+.match-pill{font-size:.65rem;font-weight:800;padding:3px 9px;border-radius:100px;display:inline-block}
+.match-hi{background:rgba(16,185,129,.15);color:#10b981}
+.match-mid{background:rgba(59,130,246,.15);color:#60a5fa}
+.match-lo{background:rgba(239,68,68,.12);color:#fca5a5}
+
+#detail-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;opacity:.45;gap:10px;padding:20px}
+#detail-empty i{width:34px;height:34px}
+#detail-view{display:none;flex-direction:column;flex:1;min-height:0}
+#detail-head{padding-bottom:14px;border-bottom:1px solid var(--border);margin-bottom:14px}
+#d-back{display:none;background:none;border:1px solid var(--border);color:white;border-radius:10px;padding:7px 14px;font-size:.75rem;font-weight:600;cursor:pointer;margin-bottom:12px}
+#d-back:hover{border-color:var(--primary)}
+#detail-body{overflow-y:auto;flex:1;min-height:0;padding-right:8px}
+#detail-foot{padding-top:14px;border-top:1px solid var(--border)}
+.apply-note{font-size:.68rem;opacity:.55;text-align:center;margin-top:8px}
+
+.cv-bar{display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:18px;font-size:.8rem}
+.cv-bar label{cursor:pointer;padding:9px 16px;border:1px dashed var(--border);border-radius:12px;font-weight:600}
+.cv-bar label:hover{border-color:var(--primary)}
+#credit-badge{font-size:.72rem;padding:6px 12px}
+#credit-hint{font-size:.7rem;opacity:.55;text-align:center;margin-top:10px}
+.tag{display:inline-block;font-size:.7rem;font-weight:600;padding:5px 10px;border-radius:8px;margin:3px;border:1px solid var(--border);background:rgba(255,255,255,.03)}
+.tag.ok{color:#10b981;border-color:rgba(16,185,129,.3)}
+.tag.miss{color:#fca5a5;border-color:rgba(239,68,68,.3)}
+a.tag.link{color:var(--primary);text-decoration:none}
+a.tag.link:hover{border-color:var(--primary)}
+.d-sec{margin-bottom:22px}
+.d-sec h4{font-size:.7rem;text-transform:uppercase;letter-spacing:.6px;opacity:.55;margin-bottom:8px}
+.d-sec p,.d-sec li{font-size:.88rem;line-height:1.6;opacity:.85}
+.d-sec ul{padding-left:18px}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fact{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:12px;padding:10px 12px}
+.fact span{display:block;font-size:.6rem;opacity:.5;text-transform:uppercase}
+.fact b{font-size:.85rem}
+.note{font-size:.72rem;opacity:.7;background:rgba(255,255,255,.03);padding:8px 12px;border-radius:8px;margin-bottom:18px}
+.match-basis{font-size:.7rem;opacity:.55;margin:2px 0 8px}
+
+/* ---------- mobile / narrow: one pane at a time ---------- */
+@media (max-width: 900px){
+  .tools-strip{grid-template-columns:1fr;padding:0 5% 16px}
+  .split{grid-template-columns:1fr;height:85vh;padding:0 5% 60px}
+  .split.detail-open #list-pane{display:none}
+  .split:not(.detail-open) #detail-pane{display:none}
+  #d-back{display:inline-block}
+}
+</style>
+</head>
+<body>
+<nav class="glass-nav">
+  <div class="logo">CVAlign<span>.AI</span></div>
+  <div class="nav-links">
+    <a href="/">Intelligence</a>
+    <a href="/ats">ATS Optimizer</a>
+    <a href="/jobs" style="color:var(--primary);opacity:1;font-weight:700;">Job Engine</a>
+    <a href="/dashboard" class="btn-primary" style="text-decoration:none;">Dashboard</a>
+  </div>
+</nav>
+
+<main>
+<section class="hero">
+  <div class="badge">Worldwide Opportunities</div>
+  <h1>Your Career <span class="gradient-text">Without Borders.</span></h1>
+  <p>Search live listings, open any job for a clean summary, and upload your CV to see how well you fit.</p>
+
+  <div class="command-center" style="display:flex;gap:10px;justify-content:center;margin-top:30px;flex-wrap:wrap;">
+    <input type="text" id="role-input" value="Senior Data Analyst" class="main-select" style="width:250px;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:white;">
+    <select id="country-selector" class="main-select" style="width:180px;padding:12px;border-radius:12px;background:#1a1a1a;color:white;">
+      <option value="India" selected>India 🇮🇳</option>
+      <option value="UAE">UAE 🇦🇪</option>
+      <option value="Germany">Germany 🇩🇪</option>
+      <option value="USA">USA 🇺🇸</option>
+      <option value="UK">UK 🇬🇧</option>
+      <option value="Canada">Canada 🇨🇦</option>
+      <option value="Singapore">Singapore 🇸🇬</option>
+      <option value="Australia">Australia 🇦🇺</option>
+      <option value="Austria">Austria 🇦🇹</option>
+      <option value="Belgium">Belgium 🇧🇪</option>
+      <option value="Brazil">Brazil 🇧🇷</option>
+      <option value="Switzerland">Switzerland 🇨🇭</option>
+      <option value="Spain">Spain 🇪🇸</option>
+      <option value="France">France 🇫🇷</option>
+      <option value="Italy">Italy 🇮🇹</option>
+      <option value="Mexico">Mexico 🇲🇽</option>
+      <option value="Netherlands">Netherlands 🇳🇱</option>
+      <option value="New Zealand">New Zealand 🇳🇿</option>
+      <option value="Poland">Poland 🇵🇱</option>
+      <option value="South Africa">South Africa 🇿🇦</option>
+    </select>
+    <button id="find-jobs-btn" class="btn-analyze">Find Global Jobs</button>
+  </div>
+
+  <div class="cv-bar" id="cv-bar">
+    <span id="credit-badge" class="match-pill match-mid">Credits: …</span>
+    <label for="cv-upload"><span id="cv-label">📄 Upload CV to match jobs (optional)</span></label>
+    <input type="file" id="cv-upload" hidden accept=".pdf">
+  </div>
+  <div id="credit-hint"></div>
+  <div id="auth-banner" class="error-banner"></div>
+</section>
+
+<!-- TOOLS STRIP: always visible -->
+<section class="tools-strip">
+  <div class="bento-item tool-card">
+    <div class="tool-head"><i data-lucide="trending-up"></i><h3>Salary Insights</h3></div>
+    <div class="course-card" style="margin:0;border-left:4px solid var(--accent);padding:10px 12px;">
+      <div id="salary-range" style="font-size:1rem;font-weight:800;color:var(--accent);">Sync Required</div>
+      <div id="salary-loc" style="font-size:.68rem;opacity:.6;">Select Location</div>
+    </div>
+  </div>
+
+  <div class="bento-item tool-card" style="border:1px dashed rgba(0,255,157,.2);">
+    <div class="tool-head"><i data-lucide="eye-off" style="color:var(--accent);"></i><h3>Hidden Post Radar</h3></div>
+    <p class="hint">Search personal "hiring" posts & DM opportunities on LinkedIn.</p>
+    <div class="tool-btns">
+      <a id="hidden-jobs-link" href="#" target="_blank" rel="noopener" class="btn-primary" style="background:rgba(0,255,157,.1);color:var(--accent);border:1px solid rgba(0,255,157,.2);">Personal Hiring Posts</a>
+      <a id="consultant-jobs-link" href="#" target="_blank" rel="noopener" class="btn-primary" style="background:rgba(255,255,255,.05);">Consultant / Contract</a>
+    </div>
+  </div>
+
+  <div class="bento-item tool-card">
+    <div class="tool-head"><i data-lucide="users"></i><h3>Recruiter X-Ray</h3></div>
+    <p class="hint">Connect with the hiring team directly. The selected job's company is highlighted.</p>
+    <div id="recruiter-results" class="path-chips">
+      <span style="font-size:.7rem;opacity:.4;">Search to load companies...</span>
+    </div>
+  </div>
+</section>
+
+<!-- MASTER-DETAIL SPLIT -->
+<section class="split" id="split">
+
+  <div class="bento-item pane" id="list-pane">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:10px;"><i data-lucide="globe"></i><h3>Active Listings</h3></div>
+      <div id="job-count" style="font-size:.8rem;opacity:.5;">0 Jobs Found</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      <div style="position:relative;flex:1;">
+        <i data-lucide="search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;opacity:.5;"></i>
+        <input type="text" id="local-job-filter" placeholder="Filter city or company..." style="width:100%;padding:8px 10px 8px 32px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.03);color:white;font-size:.8rem;outline:none;">
+      </div>
+      <select id="sort-select" style="padding:7px;border-radius:8px;background:#1a1a1a;color:white;border:1px solid var(--border);font-size:.75rem;">
+        <option value="date">Newest</option>
+        <option value="match">Best match</option>
+      </select>
+    </div>
+    <div id="job-results" class="path-chips" style="overflow-y:auto;flex:1;min-height:0;padding-right:5px;">
+      <p style="opacity:.4;text-align:center;margin-top:40px;">Search to load listings...</p>
+    </div>
+    <div style="text-align:center;padding-top:12px;border-top:1px solid rgba(255,255,255,.05);">
+      <button id="load-more-btn" class="btn-primary" style="display:none;padding:10px 20px;font-size:.75rem;background:rgba(255,255,255,.05);border:1px solid var(--border);">Load More Jobs</button>
+    </div>
+  </div>
+
+  <div class="bento-item pane" id="detail-pane">
+    <div id="detail-empty">
+      <i data-lucide="mouse-pointer-click"></i>
+      <div style="font-weight:700;">Select a job to see details</div>
+      <div style="font-size:.75rem;">Summary, requirements, company links and your CV match appear here.</div>
+    </div>
+
+    <div id="detail-view">
+      <div id="detail-head">
+        <button id="d-back">← Back to results</button>
+        <div id="d-title" style="font-weight:800;color:var(--primary);font-size:1.1rem;"></div>
+        <div id="d-sub" style="font-size:.8rem;opacity:.65;margin-top:4px;"></div>
+      </div>
+      <div id="detail-body"></div>
+      <div id="detail-foot">
+        <a id="d-apply" href="#" target="_blank" rel="noopener" class="btn-primary" style="display:block;text-align:center;text-decoration:none;">Apply →</a>
+        <div id="d-apply-note" class="apply-note"></div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+lucide.createIcons();
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const safeUrl = u => (typeof u === 'string' && /^https?:\/\//i.test(u)) ? u : '';
+const jobContainer = $('job-results'), recruiterContainer = $('recruiter-results'), countrySelect = $('country-selector');
+const loadMoreBtn = $('load-more-btn'), findBtn = $('find-jobs-btn');
+const CV_LABEL_DEFAULT = '📄 Upload CV to match jobs (optional)';
+let allJobs = [], currentPage = 1, cvLoaded = false, outOfCredits = false;
+let selectedKey = null, selectedCompany = null, detailToken = 0;
+
+/* ---------- sign-in message (same wording as the Intelligence and ATS pages) ---------- */
+const AUTH_MSG = `⚠️ Please sign in with Google (via <a href="/dashboard">Dashboard</a>) before running an analysis.`;
+const showAuthBanner = () => { $('auth-banner').innerHTML = AUTH_MSG; $('auth-banner').style.display = 'block'; };
+const hideAuthBanner = () => { $('auth-banner').style.display = 'none'; };
+
+/* ---------- API helper: auth errors, credit badge, out-of-credits ---------- */
+function setCredits(v) {
+  const b = $('credit-badge');
+  const unlimited = v === 'Unlimited';
+  b.innerText = unlimited ? 'Credits: ∞' : `Credits: ${v}`;
+  b.className = 'match-pill ' + (unlimited || v > 2 ? 'match-hi' : v > 0 ? 'match-mid' : 'match-lo');
+  if (unlimited || v > 0) outOfCredits = false;
+}
+
+async function api(url, opts) {
+  const r = await fetch(url, opts);
+  if (r.status === 401) throw new Error('auth');       // not signed in (or session expired)
+  let data = {};
+  try { data = await r.json(); } catch (e) {}
+  if (data.credits_remaining !== undefined) setCredits(data.credits_remaining);
+  if (r.status === 402) { outOfCredits = true; setCredits(0); }
+  return { status: r.status, data };
+}
+
+/* ---------- CV upload ---------- */
+function showRemoveCv() {
+  if ($('cv-clear')) return;
+  $('cv-bar').insertAdjacentHTML('beforeend', `<a href="#" id="cv-clear" style="color:#fca5a5;font-size:.75rem;">Remove CV</a>`);
+  $('cv-clear').onclick = async ev => {
+    ev.preventDefault();
+    await fetch('/clear-cv', { method: 'POST' });
+    location.reload();
+  };
+}
+
+$('cv-upload').onchange = async e => {
+  const input = e.target;
+  const f = input.files[0];
+  if (!f) return;
+  hideAuthBanner();
+  $('cv-label').innerText = 'Reading CV...';
+  const fd = new FormData();
+  fd.append('file', f);
+  try {
+    const { data: d } = await api('/upload-cv-profile', { method: 'POST', body: fd });
+    if (d.error) { $('cv-label').innerText = '⚠️ ' + d.error; return; }
+    cvLoaded = true;
+    $('cv-label').innerText = `✅ CV loaded · ${d.skills.length} skills detected`;
+    if (d.suggested_role && !$('role-input').dataset.touched) $('role-input').value = d.suggested_role;
+    showRemoveCv();
+    if (allJobs.length) findBtn.click();   // re-run so match scores appear
+  } catch (err) {
+    if (err.message === 'auth') {
+      $('cv-label').innerText = CV_LABEL_DEFAULT;
+      input.value = '';                    // lets the user pick the same file again after signing in
+      showAuthBanner();
+    } else {
+      $('cv-label').innerText = '⚠️ Upload failed. Try again.';
+    }
+  }
+};
+$('role-input').oninput = () => { $('role-input').dataset.touched = '1'; };
+
+/* ---------- search ---------- */
+findBtn.onclick = async () => {
+  closeDetail();
+  hideAuthBanner();
+  currentPage = 1;
+  allJobs = [];
+  const role = $('role-input').value, country = countrySelect.value;
+  findBtn.innerText = "Scanning Global Markets...";
+  findBtn.disabled = true;
+  jobContainer.innerHTML = "<div class='loader'>Searching...</div>";
+  recruiterContainer.innerHTML = "";
+  loadMoreBtn.style.display = "none";
+
+  const ex = '-"closed" -"filled" -"position closed" -"role closed" -"hiring closed" -"post closed"';
+  const hq = `site:linkedin.com/posts "hiring" "${role}" ("DM me" OR "Email me") ${country} -jobs ${ex}`;
+  const cq = `site:linkedin.com/posts "${role}" ("looking for" OR "hiring") ("freelancer" OR "contractor") ${country} ${ex}`;
+  $('hidden-jobs-link').href = `https://www.google.com/search?q=${encodeURIComponent(hq)}&tbs=sbd:1`;
+  $('consultant-jobs-link').href = `https://www.google.com/search?q=${encodeURIComponent(cq)}&tbs=sbd:1`;
+
+  await fetchJobs(false);
+};
+
+loadMoreBtn.onclick = async () => {
+  currentPage++;
+  loadMoreBtn.innerText = "Loading...";
+  loadMoreBtn.disabled = true;
+  await fetchJobs(true);
+  loadMoreBtn.innerText = "Load More Jobs";
+  loadMoreBtn.disabled = false;
+};
+
+async function fetchJobs(isAppend) {
+  const country = countrySelect.value;
+  const portal = country === 'UAE' ? 'Jooble' : 'Adzuna';   // matches the backend source per country
+  const fd = new FormData();
+  fd.append('role', $('role-input').value);
+  fd.append('country', country);
+  fd.append('location', '');
+  fd.append('page', currentPage);
+  try {
+    const { data } = await api('/fetch-jobs', { method: 'POST', body: fd });
+    if (data.error) {
+      if (!isAppend) jobContainer.innerHTML = `<div class="error-banner">⚠️ ${esc(data.error)}</div>`;
+      loadMoreBtn.style.display = "none";
+      return;
+    }
+    if (data.jobs && data.jobs.length) {
+      data.jobs.forEach(j => { j.portal = portal; });
+      const start = isAppend ? allJobs.length : 0;
+      allJobs = isAppend ? [...allJobs, ...data.jobs] : data.jobs;
+      applyView();
+      scoreJobs(start);
+      const sm = {'UAE':'25k - 40k AED','India':'20L - 45L INR','USA':'$120k - $180k','Germany':'€70k - €95k','UK':'£45k - £75k','Canada':'$85k - $130k CAD','Singapore':'$70k - $110k SGD'};
+      $('salary-range').innerText = sm[country] || "Market Rate";
+      $('salary-loc').innerText = `Average in ${country}`;
+      loadMoreBtn.style.display = data.jobs.length >= 10 ? "inline-block" : "none";
+    } else {
+      if (!isAppend) jobContainer.innerHTML = "<p style='opacity:.5;text-align:center;margin-top:40px;'>No listings found. Try a different role or country.</p>";
+      loadMoreBtn.style.display = "none";
+    }
+  } catch (e) {
+    loadMoreBtn.style.display = "none";
+    if (e.message === 'auth') {
+      if (!isAppend) jobContainer.innerHTML = `<div class="error-banner">${AUTH_MSG}</div>`;
+      return;
+    }
+    console.error(e);
+    if (!isAppend) jobContainer.innerHTML = `<div class="error-banner">⚠️ Something went wrong reaching the job search. Please try again.</div>`;
+  } finally {
+    findBtn.innerText = "Find Global Jobs";
+    findBtn.disabled = false;
+  }
+}
+
+$('local-job-filter').oninput = applyView;
+$('sort-select').onchange = applyView;
+
+function applyView() {
+  const term = $('local-job-filter').value.toLowerCase();
+  const filtered = allJobs.filter(j =>
+    (j.company || '').toLowerCase().includes(term) || (j.location || '').toLowerCase().includes(term));
+  const t = j => j.updated ? new Date(j.updated).getTime() : 0;
+  filtered.sort($('sort-select').value === 'match'
+    ? (a, b) => (b.match_score ?? -1) - (a.match_score ?? -1)
+    : (a, b) => t(b) - t(a));
+  render(filtered);
+}
+
+function matchPill(job) {
+  if (!cvLoaded) return '';
+  if (job.match_score == null) {
+    if (!job.match_failed) return `<span class="match-pill match-mid">Matching…</span>`;
+    return outOfCredits ? `<span class="match-pill match-lo">Top up to score</span>` : '';
+  }
+  const s = job.match_score;
+  const cls = s >= 70 ? 'match-hi' : s >= 40 ? 'match-mid' : 'match-lo';
+  return `<span class="match-pill ${cls}">${s}% match</span>`;
+}
+
+function render(jobs) {
+  const keepScroll = jobContainer.scrollTop;
+  jobContainer.innerHTML = "";
+  recruiterContainer.innerHTML = "";
+  $('job-count').innerText = `${jobs.length} Jobs Found`;
+  const seen = new Set();
+
+  jobs.forEach(job => {
+    const company = job.company || 'Unknown Company';
+    const post = job.updated ? new Date(job.updated).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'Recently';
+
+    const card = document.createElement('div');
+    card.className = 'course-card job-card' + (selectedKey && job.link === selectedKey ? ' active' : '');
+    card.dataset.key = job.link || '';
+    card.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;">
+        <div>
+          <div style="font-weight:800;color:var(--primary);font-size:.95rem;">${esc(job.title || 'Untitled Role')}</div>
+          <div style="font-size:.8rem;opacity:.7;margin:4px 0;">${esc(company)} • ${esc(job.location || 'Location not specified')}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          ${matchPill(job)}
+          <div style="font-size:.6rem;opacity:.5;margin-top:4px;">Updated: ${post}</div>
+        </div>
+      </div>
+      <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:.78rem;font-weight:600;color:var(--accent);">${esc(job.salary || 'Market Rate')}</span>
+        <span style="font-size:.68rem;opacity:.6;">Details →</span>
+      </div>`;
+    card.onclick = () => openDetail(job);
+    jobContainer.appendChild(card);
+
+    if (!seen.has(company)) {
+      seen.add(company);
+      const rc = document.createElement('div');
+      rc.className = 'course-card rc-chip' + (company === selectedCompany ? ' active' : '');
+      rc.dataset.company = company;
+      rc.innerHTML = `
+        <div style="font-size:.65rem;opacity:.6;">Hiring team at</div>
+        <div class="rc-co" title="${esc(company)}">${esc(company)}</div>
+        <a href="${esc(safeUrl(job.xray_link))}" target="_blank" rel="noopener" style="color:var(--primary);font-size:.72rem;font-weight:800;text-decoration:none;">LinkedIn X-Ray 🔍</a>`;
+      recruiterContainer.appendChild(rc);
+    }
+  });
+  jobContainer.scrollTop = keepScroll;
+  lucide.createIcons();
+}
+
+/* ---------- selection helpers ---------- */
+function markSelection() {
+  document.querySelectorAll('.job-card').forEach(c => c.classList.toggle('active', !!selectedKey && c.dataset.key === selectedKey));
+  let target = null;
+  document.querySelectorAll('.rc-chip').forEach(c => {
+    const on = !!selectedCompany && c.dataset.company === selectedCompany;
+    c.classList.toggle('active', on);
+    if (on) target = c;
+  });
+  if (target) recruiterContainer.scrollTo({ left: Math.max(0, target.offsetLeft - 20), behavior: 'smooth' });
+}
+
+function closeDetail() {
+  detailToken++;                                   // cancel any in-flight detail request
+  selectedKey = null; selectedCompany = null;
+  $('split').classList.remove('detail-open');
+  $('detail-view').style.display = 'none';
+  $('detail-empty').style.display = 'flex';
+  markSelection();
+}
+$('d-back').onclick = closeDetail;
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
+
+/* ---------- job detail ---------- */
+const tags = (arr, cls = '') => (arr && arr.length) ? arr.map(x => `<span class="tag ${cls}">${esc(x)}</span>`).join('') : '';
+const bullets = arr => (arr && arr.length) ? `<ul>${arr.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
+const linkTag = (url, label) => `<a class="tag link" href="${esc(url)}" target="_blank" rel="noopener">${esc(label)}</a>`;
+
+function companySections(job, d) {
+  const company = (job.company && job.company !== 'Unknown') ? job.company : '';
+  if (!company) return '';
+  const q = encodeURIComponent;
+  const links = [];
+  const site = safeUrl(d.company_website);
+  const direct = safeUrl(d.direct_url);
+  if (site) links.push(linkTag(site, '🌐 Company website'));
+  if (direct) links.push(linkTag(direct, `📄 Original posting (${d.direct_host || 'employer site'})`));
+  links.push(linkTag(`https://www.google.com/search?q=${q('"' + company + '" careers jobs official site')}`, '🔎 Find careers page'));
+  links.push(linkTag(`https://www.linkedin.com/search/results/companies/?keywords=${q(company)}`, '🏢 LinkedIn company page'));
+  const xray = safeUrl(job.xray_link);
+  return `
+    <div class="d-sec">
+      <h4>Company</h4>
+      <p style="margin-bottom:6px;"><b>${esc(company)}</b></p>
+      <p style="font-size:.78rem;opacity:.6;margin-bottom:6px;">Prefer to apply directly? Check the employer's own site or careers page.</p>
+      <div>${links.join('')}</div>
+    </div>
+    <div class="d-sec">
+      <h4>Connect with the hiring team</h4>
+      <p>Want to reach HR or the hiring manager directly? Find recruiters at <b>${esc(company)}</b> on LinkedIn. The same link is also in <b>Recruiter X-Ray</b> above.</p>
+      ${xray ? `<div style="margin-top:6px;">${linkTag(xray, '🔍 Find recruiters on LinkedIn')}</div>` : ''}
+    </div>`;
+}
+
+async function openDetail(job) {
+  const my = ++detailToken;
+  selectedKey = job.link || null;
+  selectedCompany = job.company || null;
+  const portal = job.portal || 'the job portal';
+
+  $('d-title').innerText = job.title || 'Job';
+  $('d-sub').innerText = `${job.company || ''} • ${job.location || ''}`;
+  $('d-apply').href = safeUrl(job.link) || '#';
+  $('d-apply').innerText = `Apply via ${portal} →`;
+  $('d-apply-note').innerText = `Opens this listing on ${portal}. You may be redirected to the employer's site to finish applying.`;
+  $('detail-body').innerHTML = "<div class='loader'>Reading job posting...</div>";
+  $('detail-body').scrollTop = 0;
+  $('detail-empty').style.display = 'none';
+  $('detail-view').style.display = 'flex';
+  $('split').classList.add('detail-open');
+  markSelection();
+
+  try {
+    const { data: d } = await api('/job-detail', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ link: job.link, title: job.title, company: job.company, snippet: job.snippet })
+    });
+    if (my !== detailToken) return;                 // user already picked another job
+    if (d.error) {
+      $('detail-body').innerHTML = `<div class="error-banner">⚠️ ${esc(d.error)}</div>${companySections(job, {})}`;
+      return;
+    }
+    if (d.title_en) $('d-title').innerText = d.title_en;    // English title in the panel
+
+    // keep list and panel in sync: prefer the score already shown in the list
+    if (d.match && job.match_score != null) d.match.score = job.match_score;
+
+    let html = '';
+    if (d.source === 'snippet_only') {
+      html += `<div class="note">ℹ️ The original site blocks automated reading, so this summary is based on the listing preview only. Open the listing for the full posting.</div>`;
+    }
+    if (d.match) {
+      const s = d.match.score;
+      const col = s >= 70 ? '#10b981' : s >= 40 ? '#60a5fa' : '#ef4444';
+      html += `
+        <div class="d-sec" style="background:rgba(59,130,246,.07);border:1px solid var(--border);border-radius:14px;padding:16px;">
+          <div style="font-size:2rem;font-weight:800;color:${col};">${esc(s)}% <span style="font-size:.8rem;opacity:.6;">CV match</span></div>
+          <div class="match-basis">Based on skills, experience and role level.</div>
+          <p>${esc(d.match.verdict)}</p>
+          <div style="margin-top:8px;">${tags(d.match.matched_skills, 'ok')}${tags(d.match.missing_skills, 'miss')}</div>
+          <p style="margin-top:8px;">💡 ${esc(d.match.tip)}</p>
+        </div>`;
+    } else if (!cvLoaded) {
+      html += `<div class="note">Upload your CV above to see how well you match this role.</div>`;
+    }
+
+    html += `
+      <div class="d-sec"><h4>Summary</h4><p>${esc(d.summary || 'Not available')}</p></div>
+      <div class="d-sec facts">
+        <div class="fact"><span>Experience</span><b>${esc(d.experience_required || 'Not stated')}</b></div>
+        <div class="fact"><span>Education</span><b>${esc(d.education || 'Not stated')}</b></div>
+        <div class="fact"><span>Type</span><b>${esc(d.employment_type || 'Not stated')}</b></div>
+        <div class="fact"><span>Salary</span><b>${esc(d.salary || job.salary || 'Not stated')}</b></div>
+      </div>`;
+    if (d.key_skills?.length) html += `<div class="d-sec"><h4>Key skills</h4>${tags(d.key_skills)}</div>`;
+    if (d.responsibilities?.length) html += `<div class="d-sec"><h4>Responsibilities</h4>${bullets(d.responsibilities)}</div>`;
+    if (d.nice_to_have?.length) html += `<div class="d-sec"><h4>Nice to have</h4>${bullets(d.nice_to_have)}</div>`;
+    if (d.benefits?.length) html += `<div class="d-sec"><h4>Benefits</h4>${bullets(d.benefits)}</div>`;
+    html += companySections(job, d);
+    $('detail-body').innerHTML = html;
+  } catch (err) {
+    if (my !== detailToken) return;
+    if (err.message === 'auth') {
+      $('detail-body').innerHTML = `<div class="error-banner">${AUTH_MSG}</div>${companySections(job, {})}`;
+      return;
+    }
+    $('detail-body').innerHTML = `<div class="error-banner">⚠️ Could not load details. Please try again.</div>${companySections(job, {})}`;
+  }
+}
+
+/* ---------- AI match scores for the listing (same number as the panel) ---------- */
+async function scoreJobs(start) {
+  if (!cvLoaded) return;
+  const batch = allJobs.slice(start).map((j, i) => ({
+    id: String(start + i), link: j.link, title: j.title, company: j.company, snippet: j.snippet
+  }));
+  try {
+    const { data: d } = await api('/match-jobs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jobs: batch })
+    });
+    Object.entries(d.scores || {}).forEach(([id, s]) => { if (allJobs[id]) allJobs[id].match_score = s; });
+  } catch (e) { if (e.message === 'auth') return; console.error('Scoring failed', e); }
+  allJobs.slice(start).forEach(j => { if (j.match_score == null) j.match_failed = true; });
+  applyView();
+}
+
+/* ---------- startup: credits, price hint, restore CV state ---------- */
+(async () => {
+  try {
+    const [me, pr, cv] = await Promise.all([
+      fetch('/api/me').then(r => r.json()),
+      fetch('/api/pricing').then(r => r.json()),
+      fetch('/cv-status').then(r => r.json())
+    ]);
+    if (me.logged_in) {
+      setCredits(me.credits_remaining);
+    } else {
+      $('credit-badge').innerText = 'Sign in to see credits';   // signed-out visitors
+    }
+    const c = pr.costs, p = n => n === 1 ? '1 credit' : `${n} credits`;
+    $('credit-hint').innerText =
+      `Search is free · Reading your CV: ${p(c.job_cv)} · Scoring a page of results: ${p(c.job_match)} · Opening a job: ${p(c.job_detail)} (free if opened before)`;
+    if (cv.loaded) {
+      cvLoaded = true;
+      $('cv-label').innerText = `✅ CV loaded · ${cv.skills} skills detected`;
+      showRemoveCv();
+    }
+  } catch (e) { /* ignore */ }
+})();
+</script>
+</body>
+</html>

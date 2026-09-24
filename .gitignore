@@ -1,0 +1,22 @@
+# Secrets
+.env
+
+# Database
+*.db
+*.sqlite
+
+# Virtual Environment
+venv/
+.venv/
+
+# Uploads
+uploads/*
+!uploads/.gitkeep
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Mac OS
+.DS_Store

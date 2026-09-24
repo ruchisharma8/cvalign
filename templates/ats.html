@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CVAlign.AI | ATS Optimizer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        .error-banner {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+            color: #fca5a5;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            text-align: center;
+            margin: 20px 8%;
+        }
+        .weak-verb-chip {
+            display: inline-block;
+            background: rgba(239, 68, 68, 0.08);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin: 4px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="glass-nav">
+        <div class="logo">CVAlign<span>.AI</span></div>
+        <div class="nav-links">
+            <a href="/">Intelligence</a>
+            <a href="/ats" style="color: var(--primary); opacity: 1;">ATS Optimizer</a>
+            <a href="/jobs">Job Engine</a>
+            <a href="/dashboard" class="btn-primary" style="text-decoration:none;">Dashboard</a>
+        </div>
+    </nav>
+
+    <main>
+        <section class="hero">
+            <div class="badge">ATS Optimization Engine</div>
+            <h1>Perfect Your <span class="gradient-text">Application.</span></h1>
+            <p>Paste the Job Description (JD) and upload your CV to bridge the gap between your experience and the recruiter's requirements.</p>
+            
+            <div class="command-center" style="flex-direction: column; border-radius: 24px; padding: 25px; gap: 20px;">
+                <div style="display: flex; width: 100%; align-items: center; gap: 20px;">
+                    <div class="input-group">
+                        <label for="cv-upload" class="upload-label">
+                            <i data-lucide="upload-cloud"></i>
+                            <span id="file-name">Upload CV (PDF)</span>
+                        </label>
+                        <input type="file" id="cv-upload" hidden accept=".pdf">
+                    </div>
+                    <button id="analyze-btn" class="btn-analyze" style="min-width: 220px;">Analyze Intelligence</button>
+                </div>
+                <textarea id="jd-text" placeholder="Paste the Job Description here..." 
+                    style="width: 100%; height: 150px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 16px; color: white; padding: 18px; outline: none; font-family: inherit; resize: none; font-size: 0.95rem;">
+                </textarea>
+            </div>
+
+            <div id="error-display" style="display:none;"></div>
+
+            <div id="result-display" class="result-card" style="display:none; justify-content: center; text-align: center;">
+                <div style="display: flex; align-items: center; gap: 30px;">
+                    <div class="score-circle">
+                        <h2 id="score-text">0%</h2>
+                        <span>ATS Score</span>
+                    </div>
+                    <div class="status-info">
+                        <h3 id="status-text">Status</h3>
+                        <p id="candidate-name" style="font-size: 0.9rem; opacity: 0.7; color: var(--primary); font-weight: 600;"></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+       <section class="bento-container">
+    <div class="bento-item wide tall">
+        <i data-lucide="key"></i>
+        <h3>Missing Keywords</h3>
+        <p>Exhaustive list of JD-specific phrases needed to bypass ATS filters.</p>
+        <div id="keyword-results" class="path-chips" style="flex-direction: row; flex-wrap: wrap; gap: 10px;"></div>
+    </div>
+
+    <div class="bento-item wide tall">
+        <i data-lucide="edit-3"></i>
+        <h3>Suggested Bullet Rewrites</h3>
+        <p>High-impact, action-oriented versions of your experience.</p>
+        <div id="rewrite-results" class="path-chips"></div>
+    </div>
+
+    <div class="bento-item wide" id="weak-verbs-section" style="display:none;">
+        <i data-lucide="alert-triangle"></i>
+        <h3>Weak Verbs Detected</h3>
+        <p>These words dilute your impact. Swap them for stronger, results-driven language.</p>
+        <div id="weak-verb-results" style="margin-top: 15px;"></div>
+    </div>
+</section>
+    </main>
+
+   <script>
+        lucide.createIcons();
+
+        const fileInput = document.getElementById('cv-upload');
+        const fileNameDisplay = document.getElementById('file-name');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const keywordContainer = document.getElementById('keyword-results');
+        const rewriteContainer = document.getElementById('rewrite-results');
+        const errorDisplay = document.getElementById('error-display');
+        const weakVerbsSection = document.getElementById('weak-verbs-section');
+        const weakVerbContainer = document.getElementById('weak-verb-results');
+
+        fileInput.onchange = () => {
+            if(fileInput.files[0]) fileNameDisplay.innerText = fileInput.files[0].name;
+        };
+
+        analyzeBtn.onclick = async () => {
+            const jd = document.getElementById('jd-text').value;
+            if (!fileInput.files[0] || !jd.trim()) {
+                alert("Please provide both your CV and the Job Description.");
+                return;
+            }
+
+            analyzeBtn.innerText = "Optimize My CV...";
+            analyzeBtn.disabled = true; // FIX: prevents duplicate paid API calls on repeat clicks
+            keywordContainer.innerHTML = ""; 
+            rewriteContainer.innerHTML = "";
+            weakVerbsSection.style.display = "none";
+            errorDisplay.style.display = "none";
+            errorDisplay.innerHTML = "";
+            
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('jd_text', jd);
+
+            try {
+                const response = await fetch('/upload-ats', { method: 'POST', body: formData });
+
+                if (response.redirected || response.status === 401) {
+                    errorDisplay.innerHTML = `<div class="error-banner">⚠️ Please sign in with Google (via Dashboard) before running an analysis.</div>`;
+                    errorDisplay.style.display = "block";
+                    return;
+                }
+
+                const data = await response.json();
+
+                // FIX: surface backend errors (bad PDF, API failure) instead of failing silently
+                if (data.error) {
+                    errorDisplay.innerHTML = `<div class="error-banner">⚠️ ${data.error}</div>`;
+                    errorDisplay.style.display = "block";
+                    return;
+                }
+
+                if (data.score !== undefined) {
+                    const resultDisplay = document.getElementById('result-display');
+                    const scoreText = document.getElementById('score-text');
+                    const statusText = document.getElementById('status-text');
+                    
+                    resultDisplay.style.display = 'flex';
+                    scoreText.innerText = data.score + "%";
+                    document.getElementById('candidate-name').innerText = `Analysis for: ${data.name || 'Candidate'}`;
+
+                    if (data.score >= 85) {
+                        statusText.innerText = "Market Ready";
+                        scoreText.style.color = "var(--accent)";
+                    } else if (data.score >= 60) {
+                        statusText.innerText = "Optimization Needed";
+                        scoreText.style.color = "var(--primary)";
+                    } else {
+                        statusText.innerText = "Critical Gaps Found";
+                        scoreText.style.color = "#ef4444";
+                    }
+
+                    (data.keywords || []).forEach(word => {
+                        const chip = document.createElement('div');
+                        chip.className = 'course-card';
+                        chip.style.margin = "0";
+                        chip.innerHTML = `<span style="color:var(--accent); font-weight:600;">+ ${word}</span>`;
+                        keywordContainer.appendChild(chip);
+                    });
+
+                    (data.rewrites || []).forEach(item => {
+                        const card = document.createElement('div');
+                        card.className = 'course-card';
+                        card.innerHTML = `
+                            <div style="font-size:0.8rem; opacity:0.5; text-decoration:line-through; margin-bottom:8px;">${item.original}</div>
+                            <div style="color:var(--primary); font-weight:600; line-height:1.4;">
+                                <i data-lucide="zap" style="width:14px; height:14px; display:inline; margin-right:5px; vertical-align:middle;"></i>
+                                ${item.suggested}
+                            </div>
+                        `;
+                        rewriteContainer.appendChild(card);
+                    });
+
+                    // FIX: weak_verbs was already coming back from the backend
+                    // but had no UI to display it — now it does
+                    if (data.weak_verbs && data.weak_verbs.length > 0) {
+                        weakVerbsSection.style.display = "block";
+                        data.weak_verbs.forEach(verb => {
+                            const chip = document.createElement('span');
+                            chip.className = 'weak-verb-chip';
+                            chip.innerText = verb;
+                            weakVerbContainer.appendChild(chip);
+                        });
+                    }
+                    
+                    lucide.createIcons();
+                    resultDisplay.scrollIntoView({ behavior: 'smooth' });
+                }
+            } catch (error) {
+                console.error("ATS Analysis error:", error);
+                errorDisplay.innerHTML = `<div class="error-banner">⚠️ Analysis failed. Please check your connection and try again.</div>`;
+                errorDisplay.style.display = "block";
+            } finally {
+                analyzeBtn.innerText = "Optimize My CV"; 
+                analyzeBtn.disabled = false;
+            }
+        };
+    </script>
+    </body>
+</html>

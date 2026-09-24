@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CVAlign.AI | Career Intelligence Portal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        .roadmap-timeline {
+            margin-top: 15px;
+            border-left: 2px dashed rgba(59, 130, 246, 0.3);
+            padding-left: 20px;
+            position: relative;
+        }
+        .roadmap-step {
+            margin-bottom: 32px;
+            position: relative;
+        }
+        .roadmap-step::before {
+            content: '';
+            position: absolute;
+            left: -27px;
+            top: 5px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--primary);
+            box-shadow: 0 0 10px var(--primary);
+        }
+        .step-title {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--primary);
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+        .step-desc {
+            font-size: 0.95rem;
+            opacity: 0.75;
+            line-height: 1.6;
+        }
+        .resource-btn.coursera { color: #3b82f6; }
+        .resource-btn.udemy { color: #a855f7; }
+        .resource-btn.youtube { color: #ef4444; }
+        .resource-btn.github { color: #e5e7eb; }
+        .error-banner {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+            color: #fca5a5;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+        .resource-btn-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        .resource-btn {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.03);
+            text-decoration: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .intel-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+        }
+    </style>
+</head>
+<body>
+    <nav class="glass-nav">
+        <div class="logo">CVAlign<span>.AI</span></div>
+        <div class="nav-links">
+            <a href="/" style="color: var(--primary); opacity: 1; font-weight: 700;">Intelligence</a>
+            <a href="/ats">ATS Optimizer</a>
+            <a href="/jobs">Job Engine</a>
+            <a href="/dashboard" class="btn-primary" style="text-decoration:none;">Dashboard</a>
+        </div>
+    </nav>
+
+    <main>
+        <section class="hero">
+            <div class="badge">Propelled by Career Intelligence</div>
+            <h1>Unlock Your Global <span class="gradient-text">Potential.</span></h1>
+            <p>Aligning your experience with the world. Upload your CV to see your personalized roadmap, skill gaps, and global job matches.</p>
+            
+            <div class="command-center">
+                <div class="input-group">
+                    <label for="cv-upload" class="upload-label">
+                        <i data-lucide="upload-cloud"></i>
+                        <span id="file-name">Upload CV (PDF)</span>
+                    </label>
+                    <input type="file" id="cv-upload" hidden accept=".pdf">
+                </div>
+                
+                <div class="divider"></div>
+                
+                <input type="text" id="target-role" placeholder="Target Role (e.g. Data Analyst)" class="main-input">
+                
+                <div class="divider"></div>
+                
+                <select id="country-selector" class="main-select">
+                    <option value="India" selected>India 🇮🇳</option>
+                    <option value="UAE">UAE 🇦🇪</option>
+                    <option value="Germany">Germany 🇩🇪</option>
+                    <option value="USA">USA 🇺🇸</option>
+                    <option value="UK">UK 🇬🇧</option>
+                    <option value="Canada">Canada 🇨🇦</option>
+                    <option value="Singapore">Singapore 🇸🇬</option>
+                    <option value="Australia">Australia 🇦🇺</option>
+                    <option value="Austria">Austria 🇦🇹</option>
+                    <option value="Belgium">Belgium 🇧🇪</option>
+                    <option value="Brazil">Brazil 🇧🇷</option>
+                    <option value="Switzerland">Switzerland 🇨🇭</option>
+                    <option value="Spain">Spain 🇪🇸</option>
+                    <option value="France">France 🇫🇷</option>
+                    <option value="Italy">Italy 🇮🇹</option>
+                    <option value="Mexico">Mexico 🇲🇽</option>
+                    <option value="Netherlands">Netherlands 🇳🇱</option>
+                    <option value="New Zealand">New Zealand 🇳🇿</option>
+                    <option value="Poland">Poland 🇵🇱</option>
+                    <option value="South Africa">South Africa 🇿🇦</option>
+                </select>
+                
+                <button id="analyze-btn" class="btn-analyze">Analyze Intelligence</button>
+            </div>
+
+            <div id="result-display" class="result-card" style="display:none; flex-direction: column; align-items: stretch;">
+                <div style="display: flex; align-items: center; gap: 30px; margin-bottom: 20px;">
+                    <div class="score-circle">
+                        <h2 id="score-text">0%</h2>
+                        <span>Match Score</span>
+                    </div>
+                    <div class="status-info">
+                        <h3 id="status-text">Processing...</h3>
+                        <p id="candidate-meta" style="font-size: 0.9rem; opacity: 0.7; color: var(--primary); font-weight: 600;"></p>
+                    </div>
+                </div>
+                
+                <div id="radar-chart" style="width: 100%; height: 350px;"></div>
+            </div>
+        </section>
+
+       <section class="bento-container intel-grid">
+            <div class="bento-item tall">
+                <i data-lucide="map"></i>
+                <h3>Career Roadmap</h3>
+                <p style="font-size: 0.75rem;">Your personalized trajectory to reach Senior levels in the selected market.</p>
+                <div id="roadmap-results" class="roadmap-timeline">
+                    <p style="opacity: 0.4; font-size: 0.7rem;">Upload CV to generate trajectory...</p>
+                </div>
+            </div>
+            
+            <div class="bento-item wide">
+                <i data-lucide="cpu"></i>
+                <h3>Skill Gap Analysis</h3>
+                <p>Identified gaps based on market benchmarks. Follow the paths below to bridge them.</p>
+                <div id="learning-path-results" class="path-chips"></div>
+            </div>
+
+            <div class="bento-item wide">
+                <i data-lucide="globe"></i>
+                <h3>Global Job Engine</h3>
+                <p>Instantly match with roles hiring expats based on your visa eligibility. Browse active listings in the Job Engine tab.</p>
+                <a href="/jobs" class="btn-primary" style="display:inline-block; margin-top:10px; text-decoration:none; font-size: 0.7rem;">Open Job Engine →</a>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        const fileInput = document.getElementById('cv-upload');
+        const fileNameDisplay = document.getElementById('file-name');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const learningPathContainer = document.getElementById('learning-path-results');
+        const roadmapContainer = document.getElementById('roadmap-results');
+
+        fileInput.onchange = () => {
+            if(fileInput.files[0]) fileNameDisplay.innerText = fileInput.files[0].name;
+        };
+
+        analyzeBtn.onclick = () => {
+            if (!fileInput.files[0]) {
+                fileInput.click();
+            } else {
+                uploadFile();
+            }
+        };
+
+        async function uploadFile() {
+            const role = document.getElementById('target-role').value || "Data Analyst";
+            const country = document.getElementById('country-selector').value;
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('role', role);
+            formData.append('country', country);
+
+            analyzeBtn.innerText = "Analyzing Trajectory...";
+            analyzeBtn.disabled = true;
+            learningPathContainer.innerHTML = ""; 
+            roadmapContainer.innerHTML = "<div class='loader'>Generating Path...</div>";
+            
+            try {
+                const response = await fetch('/upload', { method: 'POST', body: formData });
+
+                if (response.redirected || response.status === 401) {
+                    roadmapContainer.innerHTML = `<div class="error-banner">⚠️ Please sign in with Google (via Dashboard) before running an analysis.</div>`;
+                    learningPathContainer.innerHTML = "";
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (data.error) {
+                    roadmapContainer.innerHTML = `<div class="error-banner">⚠️ ${data.error}</div>`;
+                    learningPathContainer.innerHTML = "";
+                    return;
+                }
+
+                if (data.score !== undefined) {
+                    document.getElementById('result-display').style.display = 'flex';
+                    document.getElementById('score-text').innerText = data.score + "%";
+                    document.getElementById('status-text').innerText = data.status;
+                    document.getElementById('candidate-meta').innerText =
+                        `${data.current_role || 'Role not detected'} | ${data.experience ?? 0} Years Experience`;
+
+                    const graphData = JSON.parse(data.graph);
+                    Plotly.newPlot('radar-chart', graphData.data, graphData.layout, {responsive: true, displayModeBar: false});
+
+                    generateRoadmap(data, role, country);
+
+                    if (data.missing && data.missing.length > 0) {
+                        data.missing.forEach(skill => {
+                            const q = encodeURIComponent(skill);
+                            const chip = document.createElement('div');
+                            chip.className = 'course-card';
+                            chip.innerHTML = `
+                                <div class="skill-tag">⚠️ GAP: ${skill.toUpperCase()}</div>
+                                <div class="resource-btn-row">
+                                    <a class="resource-btn coursera" href="https://www.coursera.org/search?query=${q}" target="_blank">🎓 Coursera</a>
+                                    <a class="resource-btn udemy" href="https://www.udemy.com/courses/search/?q=${q}" target="_blank">📚 Udemy</a>
+                                    <a class="resource-btn youtube" href="https://www.youtube.com/results?search_query=${q}+tutorial" target="_blank">▶️ YouTube</a>
+                                    <a class="resource-btn github" href="https://github.com/search?q=${q}&type=repositories" target="_blank">💻 GitHub</a>
+                                </div>
+                            `;
+                            learningPathContainer.appendChild(chip);
+                        });
+                    } else {
+                        learningPathContainer.innerHTML = "<p style='color: var(--accent)'>No skill gaps found. You are market-ready!</p>";
+                    }
+                }
+            } catch (error) {
+                console.error("Analysis failed", error);
+                roadmapContainer.innerHTML = `<div class="error-banner">⚠️ Analysis failed. Please check your connection and try again.</div>`;
+            } finally {
+                analyzeBtn.innerText = "Analyze Intelligence";
+                analyzeBtn.disabled = false;
+            }
+        }
+
+        function generateRoadmap(data, targetRole, country) {
+            roadmapContainer.innerHTML = "";
+            
+            const countryMeta = {
+                'UAE': { visa: 'Golden Visa / Green Visa', lang: 'English', focus: 'Data Engineering' },
+                'Germany': { visa: 'EU Blue Card', lang: 'German B1/B2', focus: 'Automation' },
+                'USA': { visa: 'H1-B / O-1', lang: 'English', focus: 'Scalability' },
+                'India': { visa: 'Domestic Tech Hubs', lang: 'English', focus: 'Cloud Transformation' },
+                'UK': { visa: 'Skilled Worker Visa', lang: 'English', focus: 'Finance Data' }
+            };
+
+            const meta = countryMeta[country] || { visa: 'Work Permit', lang: 'English', focus: 'Core Tech' };
+            const currentRole = data.current_role || 'your current role';
+            const experience = data.experience ?? 0;
+
+            const steps = [
+                { title: "Current Baseline", desc: `You are currently a ${currentRole} with ${experience} years of depth.` },
+                { title: "Localized Upskilling", desc: `Market demand in ${country} emphasizes <b>${meta.focus}</b>. Address skill gaps to match local benchmarks.` },
+                { title: "Regulatory Prep", desc: `Targeting <b>${meta.visa}</b>. Ensure your profile meets the specific threshold for ${country}.` },
+                { title: "Role Transition", desc: `Full alignment achieved for <b>${targetRole}</b>. Target local companies like those found in the Job Engine.` }
+            ];
+
+            steps.forEach(step => {
+                const stepDiv = document.createElement('div');
+                stepDiv.className = 'roadmap-step';
+                stepDiv.innerHTML = `
+                    <div class="step-title">${step.title}</div>
+                    <div class="step-desc">${step.desc}</div>
+                `;
+                roadmapContainer.appendChild(stepDiv);
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CVAlign.AI | Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        .credit-badge-large { font-size: 3rem; font-weight: 800; color: var(--accent); line-height: 1; }
+        .credit-badge-large.low { color: #ef4444; }
+        .dashboard-avatar {
+            width: 64px; height: 64px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; font-weight: 800; margin: 0 auto 15px;
+        }
+        .quick-link-row { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+        .quick-link {
+            display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+            background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+            border-radius: 12px; text-decoration: none; color: var(--text);
+            font-size: 0.85rem; font-weight: 600; transition: 0.3s;
+        }
+        .quick-link:hover { border-color: var(--primary); background: rgba(59, 130, 246, 0.08); }
+        .quick-link i { color: var(--primary); width: 18px; height: 18px; }
+        .status-pill {
+            display: inline-block; padding: 6px 14px; border-radius: 100px;
+            font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .status-pill.active { background: rgba(16,185,129,0.1); color: var(--accent); border: 1px solid rgba(16,185,129,0.3); }
+        .status-pill.admin { background: rgba(59,130,246,0.1); color: var(--primary); border: 1px solid rgba(59,130,246,0.3); }
+        .notice {
+            max-width: 560px; margin: 18px auto 0; padding: 12px 16px; border-radius: 12px;
+            background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); font-size: 0.85rem;
+        }
+        .cost-group { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.6px; opacity: 0.5; margin: 14px 0 2px; }
+        .cost-row {
+            display: flex; justify-content: space-between; gap: 10px; padding: 9px 0;
+            border-bottom: 1px solid var(--border); font-size: 0.8rem;
+        }
+        .cost-row b { color: var(--accent); white-space: nowrap; }
+        .feature-list { list-style: none; padding: 0; margin: 14px 0 18px; display: grid; gap: 8px; }
+        .feature-list li { font-size: 0.85rem; opacity: 0.8; }
+        @media (max-width: 900px) {
+            .bento-container { grid-template-columns: 1fr !important; }
+            .bento-item { grid-column: auto !important; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="glass-nav">
+        <div class="logo">CVAlign<span>.AI</span></div>
+        <div class="nav-links">
+            <a href="/">Intelligence</a>
+            <a href="/ats">ATS Optimizer</a>
+            <a href="/jobs">Job Engine</a>
+            <a href="/dashboard" style="color: var(--primary); opacity: 1; font-weight: 700;">Dashboard</a>
+        </div>
+    </nav>
+
+    <main>
+        <section class="hero" style="padding-bottom: 30px;">
+            <div class="badge">Your Account</div>
+            <h1 style="font-size: 2.75rem;">Welcome to Your <span class="gradient-text">Dashboard.</span></h1>
+            <p>Track your credits, review your account status, and jump back into your career tools.</p>
+            <div id="signin-notice" class="notice" style="display:none;">🔒 Please sign in with Google to use the Job Engine. You'll be taken straight there afterwards.</div>
+        </section>
+
+        <section class="bento-container" style="grid-template-columns: repeat(3, 1fr); padding-top: 0;">
+            <div class="bento-item" id="account-card" style="text-align: center;">
+                <div id="account-card-content">
+                    <p style="opacity: 0.5; font-size: 0.85rem;">Loading account...</p>
+                </div>
+            </div>
+
+            <div class="bento-item" style="text-align: center;">
+                <i data-lucide="zap" style="margin: 0 auto;"></i>
+                <h3>Credits Remaining</h3>
+                <div id="credit-display" style="margin: 15px 0;">
+                    <p style="opacity: 0.5; font-size: 0.85rem;">—</p>
+                </div>
+                <p style="font-size: 0.75rem; opacity: 0.5;">CV analysis, ATS scans and Job Engine AI actions use credits. See the price list below.</p>
+                <div id="topup-note" style="margin-top: 10px; font-size: 0.75rem;"></div>
+            </div>
+
+            <div class="bento-item">
+                <i data-lucide="compass"></i>
+                <h3>Quick Links</h3>
+                <p style="font-size: 0.8rem;">Jump straight back into your career tools.</p>
+                <div class="quick-link-row">
+                    <a href="/" class="quick-link"><i data-lucide="brain-circuit"></i> Career Intelligence</a>
+                    <a href="/ats" class="quick-link"><i data-lucide="target"></i> ATS Optimizer</a>
+                    <a href="/jobs" class="quick-link"><i data-lucide="globe"></i> Global Job Engine</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="bento-container" style="grid-template-columns: repeat(3, 1fr); padding-top: 0;">
+            <div class="bento-item" style="grid-column: span 2;">
+                <i data-lucide="globe"></i>
+                <h3>Global Job Engine</h3>
+                <p style="font-size: 0.85rem;">Search live openings across 20 countries and see what matters at a glance.</p>
+                <ul class="feature-list">
+                    <li>📄 Clean English summaries of every job, whatever language it was posted in</li>
+                    <li>🎯 Upload your CV to see a % match on every listing</li>
+                    <li>🏢 Company links and a shortcut to the hiring team on LinkedIn</li>
+                    <li>🔎 Hidden Post Radar for jobs shared in personal LinkedIn posts</li>
+                </ul>
+                <div id="job-engine-cta"></div>
+            </div>
+
+            <div class="bento-item">
+                <i data-lucide="coins"></i>
+                <h3>How Credits Work</h3>
+                <div id="cost-list"><p style="opacity: 0.5; font-size: 0.8rem;">Loading...</p></div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        const SUPPORT_EMAIL = 'support@yourdomain.com';   // TODO: change to your real address
+
+        const $ = id => document.getElementById(id);
+        const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        const plural = n => n === 0 ? 'Free' : (n === 1 ? '1 credit' : `${n} credits`);
+
+        if (new URLSearchParams(location.search).get('signin') === 'required') {
+            $('signin-notice').style.display = 'block';
+        }
+
+        function renderCosts(c) {
+            $('cost-list').innerHTML = `
+                <div class="cost-group">Career tools</div>
+                <div class="cost-row"><span>CV analysis</span><b>${plural(c.cv_analysis)}</b></div>
+                <div class="cost-row"><span>ATS scan</span><b>${plural(c.ats_scan)}</b></div>
+                <div class="cost-group">Job Engine</div>
+                <div class="cost-row"><span>Search jobs</span><b>Free</b></div>
+                <div class="cost-row"><span>Read your CV for matching</span><b>${plural(c.job_cv)}</b></div>
+                <div class="cost-row"><span>Score a page of results</span><b>${plural(c.job_match)}</b></div>
+                <div class="cost-row"><span>Open a job's details</span><b>${plural(c.job_detail)}</b></div>
+                <p style="font-size: 0.7rem; opacity: 0.5; margin-top: 12px;">Re-opening a job you've already opened (with the same CV) is free. Credits are refunded automatically if an analysis fails.</p>`;
+        }
+
+        async function loadDashboard() {
+            let me = { logged_in: false }, pricing = null;
+            try {
+                [me, pricing] = await Promise.all([
+                    fetch('/api/me').then(r => r.json()),
+                    fetch('/api/pricing').then(r => r.json())
+                ]);
+            } catch (error) {
+                console.error("Dashboard load failed", error);
+                $('account-card-content').innerHTML = `<p style="color:#fca5a5; font-size:0.85rem;">Could not load account. Please refresh.</p>`;
+                return;
+            }
+
+            if (pricing) renderCosts(pricing.costs);
+            const trial = pricing ? pricing.free_credits : 0;
+
+            if (me.logged_in) {
+                const initial = (me.name || me.email || "?").charAt(0).toUpperCase();
+                const isUnlimited = me.credits_remaining === "Unlimited";
+
+                $('account-card-content').innerHTML = `
+                    <div class="dashboard-avatar">${esc(initial)}</div>
+                    <h3 style="margin-bottom: 4px;">${esc(me.name || 'Candidate')}</h3>
+                    <p style="font-size: 0.75rem; opacity: 0.6; margin-bottom: 12px;">${esc(me.email)}</p>
+                    <span class="status-pill ${isUnlimited ? 'admin' : 'active'}">${isUnlimited ? 'Admin Access' : 'Active'}</span>
+                    <div style="margin-top: 20px;">
+                        <a href="/logout" class="btn-primary" style="text-decoration:none; background:#ef4444; font-size:0.8rem;">Logout</a>
+                    </div>`;
+
+                const isLow = !isUnlimited && me.credits_remaining <= 2;
+                $('credit-display').innerHTML = `
+                    <div class="credit-badge-large ${isLow ? 'low' : ''}">${isUnlimited ? '∞' : esc(me.credits_remaining)}</div>
+                    <p style="font-size: 0.7rem; opacity: 0.5; text-transform: uppercase; letter-spacing: 0.5px;">${isUnlimited ? 'Unlimited' : 'Credits Left'}</p>`;
+
+                if (!isUnlimited && me.credits_remaining <= 0) {
+                    $('topup-note').innerHTML = `You're out of credits. <a href="mailto:${SUPPORT_EMAIL}?subject=Top%20up%20credits" style="color:var(--primary);">Contact us to top up</a>.`;
+                }
+
+                $('job-engine-cta').innerHTML = `<a href="/jobs" class="btn-primary" style="text-decoration:none;">Open Job Engine →</a>`;
+            } else {
+                $('account-card-content').innerHTML = `
+                    <i data-lucide="log-in" style="margin: 0 auto 10px;"></i>
+                    <h3 style="margin-bottom: 8px;">You're not signed in</h3>
+                    <p style="font-size: 0.8rem; opacity: 0.6; margin-bottom: 20px;">Sign in to get ${esc(trial)} free trial credits and use every tool.</p>
+                    <a href="/login" class="btn-primary" style="text-decoration:none;">Sign in with Google</a>`;
+                $('credit-display').innerHTML = `<p style="opacity: 0.4; font-size: 0.85rem;">Sign in to see your balance</p>`;
+                $('job-engine-cta').innerHTML = `<a href="/login" class="btn-primary" style="text-decoration:none;">Sign in to use Job Engine</a>
+                    <p style="font-size: 0.72rem; opacity: 0.5; margin-top: 10px;">New accounts start with ${esc(trial)} free credits.</p>`;
+            }
+            lucide.createIcons();
+        }
+
+        loadDashboard();
+    </script>
+</body>
+</html>
